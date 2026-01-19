@@ -2,7 +2,7 @@
 [![JAX](https://img.shields.io/badge/Framework-JAX-red.svg)](https://github.com/google/jax)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-***This repository provides a differentiable implementation of the two‑dimensional Time‑Dependent Ginzburg–Landau (TDGL) equations using JAX.  
+This repository provides a differentiable implementation of the two‑dimensional Time‑Dependent Ginzburg–Landau (TDGL) equations using JAX.  
 The framework is intended for exploratory studies of vortex transport and geometry‑based inverse design, with an emphasis on clarity and reproducibility.
 
 The project should be viewed as a **computational methods resource** and a **proof‑of‑concept demonstration**, rather than a quantitative device study.
