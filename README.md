@@ -1,79 +1,86 @@
-
-
-# Differentiable-TDGL: Inverse Design of Superconducting Vortex Ratchets
+# Differentiable TDGL: Inverse Design of Superconducting Vortex Ratchets
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![JAX](https://img.shields.io/badge/Framework-JAX-red.svg)](https://github.com/google/jax)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Abstract
-This repository presents a **Differentiable Time-Dependent Ginzburg-Landau (TDGL)** framework implemented in JAX for the inverse design of superconducting vortex ratchets. Traditionally, vortex guides and diodes are designed through intuition-led trial and error. By leveraging automatic differentiation (autodiff), this framework enables the calculation of gradients of vortex trajectories with respect to the underlying material landscape (the $a(x,y)$ coefficient) and channel geometry. As a proof-of-concept, we demonstrate an "inverse-designed" asymmetric channel that exhibits rectified single-vortex drift under alternating external current ($J_{ext}$).
 
-## Key Features
-- **Differentiable Physics:** Entire TDGL solver is written in JAX, allowing backpropagation through the time-evolution of the Order Parameter ($\psi$) and Vector Potential ($A$).
-- **Adaptive Core Tracking:** Implements a differentiable center-of-mass tracking mechanism to locate vortex cores within the superconducting channel.
-- **Geometry Parameterization:** A flexible ratchet mask and pinning landscape generator controlled by a learnable parameter vector $\theta$.
-- **Jacobi $\mu$-Solver:** An integrated electrostatic potential solver for calculating current injection effects.
+This repository presents a **Differentiable Time-Dependent Ginzburg-Landau (TDGL)** framework implemented in JAX. The project explores the **inverse design** of superconducting fluxonic devices by utilizing automatic differentiation to optimize material landscapes. 
 
-## Project Scope & Claims
+Specifically, the framework parameterizes the channel geometry and explicit pinning sites (via a vector $\theta$) and backpropagates through the TDGL solver to discover asymmetric configurations. The primary result is a **proof-of-concept vortex diode** that exhibits rectified single-vortex drift under alternating external current densities ($\pm J_{ext}$), effectively steering fluxons through gradient-based geometric evolution.
 
-### ✅ Scientific Claims (Proof-of-Concept)
-1. **Differentiable Framework:** A functional pipeline that connects TDGL dynamics to gradient-based optimization.
-2. **Inverse-Designed Geometry:** Successful demonstration of an automated process that alters a ratchet geometry to influence vortex motion.
-3. **Rectified Drift:** Observation of asymmetric vortex displacement (rectification) under $\pm J_{ext}$ within the simulated environment.
+## Technical Architecture
 
-### ❌ Non-Claims (Limitations)
-To maintain academic integrity, this repository **does not** claim the following:
-- **Optimized Diode:** The resulting geometries are "candidates" and not necessarily global optima for diode performance.
-- **Robust Design:** The solution may be sensitive to initial conditions, noise, or specific $\kappa$ values.
-- **Converged Solution:** The optimization path shown is a demonstration of the gradient flow, not a guarantee of mathematical convergence.
-- **Quantitative Efficiency:** No claims are made regarding the experimental IV-rectification ratio or high-frequency performance.
+The solver is engineered for high-performance differentiable physics:
+*   **Grid Discretization:** 48×48 numerical domain using Neumann boundary conditions.
+*   **State Dynamics:** Simultaneous evolution of the complex order parameter ($\psi$) and the vector potential ($A$).
+*   **Electrostatic Integration:** A Jacobi-iterative $\mu$-solver computes the scalar potential for current injection.
+*   **Differentiable Tracking:** An adaptive vortex core tracking algorithm that utilizes density percentiles and center-of-mass calculations, ensuring the vortex trajectory is a continuous and differentiable function of the design parameters.
+*   **Optimization Pipeline:** Integration with `optax` for gradient-based updates of the geometry and pinning landscapes.
 
 ## Installation
 
+The framework requires JAX and standard optimization libraries. It is recommended to use a hardware-accelerated environment (GPU/TPU) for faster backpropagation.
+
 ```bash
-pip install jax jaxlib optax matplotlib
+pip install --quiet jax jaxlib optax matplotlib
 ```
+
+## Scientific Scope & Limitations
+
+### ✅ Formal Claims (Proof-of-Concept)
+*   **Differentiable TDGL Implementation:** Successful integration of TDGL dynamics within a gradient-based optimization loop.
+*   **Inverse-Designed Geometry:** Discovery of asymmetric "ratchet" landscapes that influence fluxon dynamics.
+*   **Rectified Drift Demonstration:** Qualitative observation of unidirectional vortex displacement under alternating drive polarities.
+
+### ❌ Non-Claims & Constraints
+*   **Not an "Optimized Diode":** The resulting structural configurations are candidates found within the parameter space, not global optima.
+*   **Not a "Robust Design":** Sensitivity to initialization and noise is expected; the design is not yet characterized for environmental robustness.
+*   **Not a "Converged Solution":** The optimization provides a demonstration of gradient flow rather than a guarantee of mathematical convergence to a unique minimum.
+*   **Not "Quantitative Efficiency":** This work does not claim experimental-grade rectification ratios or high-frequency performance metrics.
 
 ## Usage
 
-The main script performs the following steps:
-1. **Initialization:** Defines the GL parameters ($\kappa$, $\gamma$, $\sigma$) and the initial superconducting state.
-2. **Forward Simulation:** Evolves the TDGL equations under a given external current.
-3. **Loss Calculation:** Evaluates the "rectified drift" (the difference in vortex displacement between positive and negative current).
-4. **Optimization:** Updates the geometry parameters $\theta$ using the Adam optimizer to maximize the drift asymmetry.
+### Running the Optimization
+To execute the inverse design process, run the main script. The system will perform 100 iterations of Adam optimization to shape the superconducting landscape.
 
-```python
-# Run the demo
-python tdgl_ratchet_opt.py
+```bash
+python main.py
 ```
 
-## Methodology
+### Execution Flow
+1.  **State Relaxation:** The system initializes $\psi$ and $A$ to reach a metastable state with a single vortex.
+2.  **Trajectory Evaluation:** The script runs two simulations in parallel (for $+J_{ext}$ and $-J_{ext}$).
+3.  **Loss Computation:** The objective function maximizes the absolute rectified drift: $|\Delta x_{pos} - \Delta x_{neg}|$.
+4.  **Geometry Update:** The parameters $\theta$ are updated to refine the channel width, tilt, and pinning gradients.
 
-The framework minimizes/maximizes a loss function based on the vortex trajectory $x_{traj}$:
-$$ \mathcal{L}(\theta) = - | \Delta x(+J_{ext}) - \Delta x(-J_{ext}) | + \lambda ||\theta||^2 $$
-Where $\Delta x$ is the net displacement of the vortex core over $N$ time steps. By differentiating through the solver, we obtain $\nabla_{\theta} \mathcal{L}$, allowing the geometry to "evolve" toward a shape that favors unidirectional motion.
+## Results & Visualization
+
+Upon completion, the framework generates two critical analytical plots:
+*   **Vortex Drift Trajectories:** Time-evolution of the vortex center-of-mass ($x_{cm}$) for both current polarities, showing the asymmetry in transport.
+*   **Optimized $a(x,y)$ Landscape:** A 2D map of the Ginzburg-Landau coefficient, revealing the discovered ratchet geometry and the spatial distribution of pinning sites.
+
+## Authors
+
+*   **Hari Hardiyan** (AI Orchestration) - [lorozloraz@gmail.com](mailto:lorozloraz@gmail.com)
+*   **Copilot** (AI Pair Programmer)
 
 ## Citation
 
-If you use this framework in your research, please cite it as follows:
+If this framework contributes to your research, please cite it as follows:
 
 ```bibtex
-@software{Hardiyan_Differentiable_TDGL_2024,
+@software{Hardiyan_TDGL_JAX_2026,
   author = {Hardiyan, Hari and Copilot},
-  title = {Differentiable TDGL: Inverse Design of Superconducting Vortex Ratchets},
+  title = {Differentiable TDGL 2D: Inverse Design of Vortex Ratchets},
   year = {2026},
-  url = {https://github.com/your-username/differentiable-tdgl},
+  publisher = {GitHub},
+  url = {https://github.com/harihardiyan/differentiable-tdgl},
   note = {Proof-of-concept for gradient-based vortex diode design}
 }
 ```
 
-## Authors
-- **Hari Hardiyan** - *AI Orchestration & Lead Developer* - [lorozloraz@gmail.com](mailto:lorozloraz@gmail.com)
-- **Copilot** - *AI Pair Programmer*
-
 ## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
----
-*Disclaimer: This repository is a research demo intended for computational physics exploration. It is provided "as-is" without guarantees of physical hardware reproducibility.*
+This project is licensed under the **MIT License**. See the `LICENSE` file for full details.
